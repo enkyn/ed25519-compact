@@ -9,7 +9,7 @@ use super::edwards25519::{
     GeP2, GeP3,
 };
 use super::error::Error;
-use super::sha512;
+use super::Hasher;
 
 /// A public key.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -186,7 +186,7 @@ impl DerefMut for Signature {
 /// The state of a streaming verification operation.
 #[derive(Clone)]
 pub struct VerifyingState {
-    hasher: sha512::Hash,
+    hasher: Hasher,
     signature: Signature,
     a: GeP3,
 }
@@ -211,7 +211,7 @@ impl VerifyingState {
                 return Err(Error::InvalidPublicKey);
             }
         };
-        let mut hasher = sha512::Hash::new();
+        let mut hasher = Hasher::new();
         hasher.update(r);
         hasher.update(&pk[..]);
         Ok(VerifyingState {
@@ -234,7 +234,7 @@ impl VerifyingState {
             GeP3::from_bytes_vartime(&expected_r_bytes).ok_or(Error::InvalidSignature)?;
         let s = &self.signature[32..64];
 
-        let mut hash = self.hasher.finalize();
+        let mut hash = self.hasher.clone().finalize();
         sc_reduce(&mut hash);
 
         let r = GeP2::double_scalarmult_vartime(hash.as_ref(), self.a, s);
@@ -264,7 +264,7 @@ impl PublicKey {
 /// The state of a streaming signature operation.
 #[derive(Clone)]
 pub struct SigningState {
-    hasher: sha512::Hash,
+    hasher: Hasher,
     az: [u8; 64],
     nonce: [u8; 64],
 }
@@ -283,7 +283,7 @@ impl SigningState {
         prefix[0..32].copy_from_slice(&r.to_bytes()[..]);
         prefix[32..64].copy_from_slice(pk_);
 
-        let mut st = sha512::Hash::new();
+        let mut st = Hasher::new();
         st.update(prefix);
 
         SigningState {
@@ -303,7 +303,7 @@ impl SigningState {
         let mut signature: [u8; 64] = [0; 64];
         let r = ge_scalarmult_base(&self.nonce[0..32]);
         signature[0..32].copy_from_slice(&r.to_bytes()[..]);
-        let mut hram = self.hasher.finalize();
+        let mut hram = self.hasher.clone().finalize();
         sc_reduce(&mut hram);
         sc_muladd(
             &mut signature[32..64],
@@ -322,13 +322,13 @@ impl SecretKey {
         let seed = &self[0..32];
         let pk = &self[32..64];
         let az: [u8; 64] = {
-            let mut hash_output = sha512::Hash::hash(seed);
+            let mut hash_output = Hasher::hash(seed);
             hash_output[0] &= 248;
             hash_output[31] &= 63;
             hash_output[31] |= 64;
             hash_output
         };
-        let mut st = sha512::Hash::new();
+        let mut st = Hasher::new();
         #[cfg(feature = "random")]
         {
             let additional_noise = Noise::generate();
@@ -347,14 +347,14 @@ impl SecretKey {
         let seed = &self[0..32];
         let pk = &self[32..64];
         let az: [u8; 64] = {
-            let mut hash_output = sha512::Hash::hash(seed);
+            let mut hash_output = Hasher::hash(seed);
             hash_output[0] &= 248;
             hash_output[31] &= 63;
             hash_output[31] |= 64;
             hash_output
         };
         let nonce = {
-            let mut hasher = sha512::Hash::new();
+            let mut hasher = Hasher::new();
             if let Some(noise) = noise {
                 hasher.update(&noise[..]);
                 hasher.update(&az[..]);
@@ -398,7 +398,7 @@ impl KeyPair {
             panic!("All-zero seed");
         }
         let (scalar, _) = {
-            let hash_output = sha512::Hash::hash(&seed[..]);
+            let hash_output = Hasher::hash(&seed[..]);
             KeyPair::split(&hash_output, false, true)
         };
         let pk = ge_scalarmult_base(&scalar).to_bytes();

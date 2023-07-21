@@ -106,7 +106,11 @@
 mod common;
 mod error;
 mod field25519;
+#[cfg(not(feature = "experimental"))]
 mod sha512;
+
+mod hasher;
+use hasher::Hasher;
 
 pub use crate::common::*;
 pub use crate::error::*;

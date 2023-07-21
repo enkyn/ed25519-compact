@@ -267,7 +267,7 @@ impl KeyPair {
 #[cfg(not(feature = "disable-signatures"))]
 mod from_ed25519 {
     use super::super::{
-        edwards25519, sha512, KeyPair as EdKeyPair, PublicKey as EdPublicKey,
+        edwards25519, Hasher, KeyPair as EdKeyPair, PublicKey as EdPublicKey,
         SecretKey as EdSecretKey,
     };
     use super::*;
@@ -277,7 +277,7 @@ mod from_ed25519 {
         pub fn from_ed25519(edsk: &EdSecretKey) -> Result<SecretKey, Error> {
             let seed = edsk.seed();
             let az: [u8; 64] = {
-                let mut hash_output = sha512::Hash::hash(*seed);
+                let mut hash_output = Hasher::hash(*seed);
                 hash_output[0] &= 248;
                 hash_output[31] &= 63;
                 hash_output[31] |= 64;
