@@ -16,6 +16,7 @@ default = ["random", "std", "x25519", "pem"]
 pem = ["ct-codecs"]
 random = ["getrandom"]
 traits = ["ed25519"]
+experimental = ["blake3"]
 self-verify = []
 blind-keys = []
 std = []
@@ -27,6 +28,7 @@ x25519 = []
 ct-codecs = { version = "1.1", optional = true }
 getrandom = { version = "0.2", optional = true }
 ed25519 = { version = "1.5", optional = true }
+blake3 = { version = "1.4", optional = true }
 
 [dev-dependencies]
 getrandom = "0.2"

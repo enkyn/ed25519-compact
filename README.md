@@ -89,3 +89,4 @@ st.verify()?;
 * `opt_size`: Enable size optimizations (based on benchmarks, 8-15% size reduction at the cost of 6.5-7% performance).
 * `x25519`: Enable support for the X25519 key exchange system.
 * `disable-signatures`: Disable support for signatures, and only compile support for X25519.
+* `experimental`: Use BLAKE3 in place of SHA512.
